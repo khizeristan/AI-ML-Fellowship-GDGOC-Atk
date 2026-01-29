@@ -15,6 +15,3 @@ The goal is to develop modular, reusable, and efficient Python code while unders
 - Debugging with `pdb`
 
 ---
-
-## Folder Structure
-
