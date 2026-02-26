@@ -1,0 +1,137 @@
+# ==========================================
+# IMPORT LIBRARIES
+# ==========================================
+import zipfile
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split, cross_val_score, learning_curve
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report
+)
+
+# ==========================================
+# EXTRACT ZIP FILE
+# ==========================================
+zip_path = "E:\AI-ML-Fellowship-GDGOC-Atk\Week 5\Task 9\Iris Dataset.zip"
+
+with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    zip_ref.extractall()
+
+print("ZIP file extracted successfully!")
+
+# ==========================================
+# LOAD CSV FILE
+# ==========================================
+# Change filename if different
+df = pd.read_csv("iris.csv")
+
+print("First 5 rows:")
+print(df.head())
+
+print("\nDataset Info:")
+print(df.info())
+
+# ==========================================
+# DATA PREPARATION
+# ==========================================
+# Assuming last column is target
+X = df.iloc[:, :-1]
+y = df.iloc[:, -1]
+
+# If target is string (Setosa, Versicolor, Virginica)
+if y.dtype == 'object':
+    from sklearn.preprocessing import LabelEncoder
+    le = LabelEncoder()
+    y = le.fit_transform(y)
+
+# ==========================================
+# TRAIN TEST SPLIT
+# ==========================================
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
+
+# ==========================================
+# DEFINE MODELS
+# ==========================================
+models = {
+    "Logistic Regression": LogisticRegression(max_iter=200),
+    "Decision Tree (Shallow - Underfitting)": DecisionTreeClassifier(max_depth=1, random_state=42),
+    "Decision Tree (Deep - Overfitting)": DecisionTreeClassifier(random_state=42),
+    "Random Forest": RandomForestClassifier(random_state=42)
+}
+
+# ==========================================
+# TRAIN & EVALUATE
+# ==========================================
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    print(f"\n========== {name} ==========")
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+    print("Precision (Macro):", precision_score(y_test, y_pred, average='macro'))
+    print("Recall (Macro):", recall_score(y_test, y_pred, average='macro'))
+    print("F1 Score (Macro):", f1_score(y_test, y_pred, average='macro'))
+    print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+# ==========================================
+# CONFUSION MATRIX (Random Forest)
+# ==========================================
+rf = RandomForestClassifier(random_state=42)
+rf.fit(X_train, y_train)
+y_pred_rf = rf.predict(X_test)
+
+cm = confusion_matrix(y_test, y_pred_rf)
+
+plt.figure()
+sns.heatmap(cm, annot=True, fmt='d')
+plt.title("Confusion Matrix - Random Forest")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+
+# ==========================================
+# CROSS VALIDATION
+# ==========================================
+cv_scores = cross_val_score(
+    RandomForestClassifier(random_state=42),
+    X,
+    y,
+    cv=5
+)
+
+print("\nCross Validation Scores:", cv_scores)
+print("Mean CV Accuracy:", np.mean(cv_scores))
+
+# ==========================================
+# LEARNING CURVE (Bias-Variance)
+# ==========================================
+train_sizes, train_scores, test_scores = learning_curve(
+    DecisionTreeClassifier(random_state=42),
+    X,
+    y,
+    cv=5
+)
+
+train_mean = np.mean(train_scores, axis=1)
+test_mean = np.mean(test_scores, axis=1)
+
+plt.figure()
+plt.plot(train_sizes, train_mean)
+plt.plot(train_sizes, test_mean)
+plt.title("Learning Curve - Decision Tree")
+plt.xlabel("Training Size")
+plt.ylabel("Accuracy")
+plt.show()
